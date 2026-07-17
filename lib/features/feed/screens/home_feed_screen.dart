@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/models/post_model.dart';
+import '../../../shared/widgets/post_image.dart';
 import '../../saved/providers/saved_posts_provider.dart';
 import '../providers/posts_provider.dart';
 
@@ -67,7 +68,7 @@ class _PostCard extends ConsumerWidget {
 
   Future<void> _toggleSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(savedPostIdsProvider.notifier).toggle(post.id);
+      await ref.read(savedPostIdsProvider.notifier).toggle(post);
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -84,61 +85,71 @@ class _PostCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+            PostImage(imageUrl: post.imageUrl!),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    post.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        post.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: Icon(
+                        isSaved ? Icons.bookmark : Icons.bookmark_outline,
+                      ),
+                      tooltip: isSaved ? 'Unsave' : 'Save',
+                      onPressed: savedIdsLoaded
+                          ? () => _toggleSave(context, ref)
+                          : null,
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: Icon(
-                    isSaved ? Icons.bookmark : Icons.bookmark_outline,
-                  ),
-                  tooltip: isSaved ? 'Unsave' : 'Save',
-                  onPressed:
-                      savedIdsLoaded ? () => _toggleSave(context, ref) : null,
+                if (post.description != null &&
+                    post.description!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(post.description!),
+                ],
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Chip(
+                      label: Text(post.city),
+                      avatar: const Icon(Icons.place_outlined, size: 16),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Chip(
+                      label: Text(post.category),
+                      avatar: const Icon(Icons.label_outline, size: 16),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _formatTimestamp(post.createdAt),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
-            if (post.description != null && post.description!.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(post.description!),
-            ],
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                Chip(
-                  label: Text(post.city),
-                  avatar: const Icon(Icons.place_outlined, size: 16),
-                  visualDensity: VisualDensity.compact,
-                ),
-                Chip(
-                  label: Text(post.category),
-                  avatar: const Icon(Icons.label_outline, size: 16),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _formatTimestamp(post.createdAt),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

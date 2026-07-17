@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../feed/providers/posts_provider.dart';
 
@@ -17,6 +20,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   final _descriptionController = TextEditingController();
   final _cityController = TextEditingController();
   final _categoryController = TextEditingController(text: 'general');
+  final _imagePicker = ImagePicker();
+
+  Uint8List? _imageBytes;
+  String? _imageFileExtension;
+  String? _imageMimeType;
+
   bool _isSubmitting = false;
   String? _errorMessage;
 
@@ -27,6 +36,42 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     _cityController.dispose();
     _categoryController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      final bytes = await picked.readAsBytes();
+      final extension = _extensionFromName(picked.name);
+
+      setState(() {
+        _imageBytes = bytes;
+        _imageFileExtension = extension;
+        _imageMimeType = picked.mimeType;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Could not pick image: $error');
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _imageBytes = null;
+      _imageFileExtension = null;
+      _imageMimeType = null;
+    });
+  }
+
+  String? _extensionFromName(String name) {
+    final dotIndex = name.lastIndexOf('.');
+    if (dotIndex == -1 || dotIndex == name.length - 1) return null;
+    return name.substring(dotIndex + 1).toLowerCase();
   }
 
   Future<void> _submit() async {
@@ -41,6 +86,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             description: _descriptionController.text.trim(),
             city: _cityController.text.trim(),
             category: _categoryController.text.trim(),
+            imageBytes: _imageBytes,
+            imageFileExtension: _imageFileExtension,
+            imageContentType: _imageMimeType,
           );
 
       if (!mounted) return;
@@ -57,13 +105,19 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('New Post')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _ImagePickerPreview(
+                imageBytes: _imageBytes,
+                onPick: _isSubmitting ? null : _pickImage,
+                onRemove: _isSubmitting ? null : _removeImage,
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Title'),
@@ -125,6 +179,52 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ImagePickerPreview extends StatelessWidget {
+  const _ImagePickerPreview({
+    required this.imageBytes,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  final Uint8List? imageBytes;
+  final VoidCallback? onPick;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageBytes == null) {
+      return OutlinedButton.icon(
+        onPressed: onPick,
+        icon: const Icon(Icons.image_outlined),
+        label: const Text('Add Photo (optional)'),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            imageBytes!,
+            height: 200,
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: onRemove,
+            icon: const Icon(Icons.close),
+            label: const Text('Remove Photo'),
+          ),
+        ),
+      ],
     );
   }
 }

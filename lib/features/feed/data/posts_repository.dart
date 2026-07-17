@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../shared/models/post_model.dart';
+
+const _postImagesBucket = 'post-images';
 
 class PostsRepository {
   PostsRepository(this._client);
@@ -19,11 +23,37 @@ class PostsRepository {
     return rows.map(PostModel.fromMap).toList();
   }
 
+  Future<String> uploadPostImage({
+    required Uint8List bytes,
+    required String fileExtension,
+    String? contentType,
+  }) async {
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw StateError('Cannot upload an image without a signed-in user.');
+    }
+
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
+    final path = 'posts/${user.id}/$fileName';
+
+    await _client.storage.from(_postImagesBucket).uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(
+            contentType: contentType ?? 'image/$fileExtension',
+            upsert: true,
+          ),
+        );
+
+    return _client.storage.from(_postImagesBucket).getPublicUrl(path);
+  }
+
   Future<void> createPost({
     required String title,
     required String description,
     required String city,
     required String category,
+    String? imageUrl,
   }) async {
     final user = _client.auth.currentUser;
     if (user == null) {
@@ -36,6 +66,7 @@ class PostsRepository {
       'description': description,
       'city': city,
       'category': category,
+      'image_url': imageUrl,
     });
   }
 }

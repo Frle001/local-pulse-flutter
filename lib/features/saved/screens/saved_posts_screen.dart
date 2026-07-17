@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/models/post_model.dart';
+import '../../../shared/widgets/post_image.dart';
 import '../providers/saved_posts_provider.dart';
 
 class SavedPostsScreen extends ConsumerWidget {
@@ -76,8 +77,7 @@ class _SavedPostCard extends ConsumerWidget {
 
   Future<void> _unsave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(savedPostIdsProvider.notifier).toggle(post.id);
-      ref.read(savedPostsControllerProvider.notifier).removeLocally(post.id);
+      await ref.read(savedPostIdsProvider.notifier).toggle(post);
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -90,53 +90,62 @@ class _SavedPostCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+            PostImage(imageUrl: post.imageUrl!),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    post.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        post.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: const Icon(Icons.bookmark),
+                      tooltip: 'Unsave',
+                      onPressed: () => _unsave(context, ref),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.bookmark),
-                  tooltip: 'Unsave',
-                  onPressed: () => _unsave(context, ref),
+                if (post.description != null &&
+                    post.description!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(post.description!),
+                ],
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Chip(
+                      label: Text(post.city),
+                      avatar: const Icon(Icons.place_outlined, size: 16),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Chip(
+                      label: Text(post.category),
+                      avatar: const Icon(Icons.label_outline, size: 16),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
                 ),
               ],
             ),
-            if (post.description != null && post.description!.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(post.description!),
-            ],
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                Chip(
-                  label: Text(post.city),
-                  avatar: const Icon(Icons.place_outlined, size: 16),
-                  visualDensity: VisualDensity.compact,
-                ),
-                Chip(
-                  label: Text(post.category),
-                  avatar: const Icon(Icons.label_outline, size: 16),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

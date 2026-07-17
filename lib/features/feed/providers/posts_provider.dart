@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/models/post_model.dart';
@@ -30,12 +32,25 @@ class PostsController extends StateNotifier<AsyncValue<List<PostModel>>> {
     required String description,
     required String city,
     required String category,
+    Uint8List? imageBytes,
+    String? imageFileExtension,
+    String? imageContentType,
   }) async {
+    String? imageUrl;
+    if (imageBytes != null) {
+      imageUrl = await _repository.uploadPostImage(
+        bytes: imageBytes,
+        fileExtension: imageFileExtension ?? 'jpg',
+        contentType: imageContentType,
+      );
+    }
+
     await _repository.createPost(
       title: title,
       description: description,
       city: city,
       category: category,
+      imageUrl: imageUrl,
     );
     await refresh();
   }
