@@ -49,6 +49,15 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/saved'),
+                icon: const Icon(Icons.bookmark_outline),
+                label: const Text('Saved Posts'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
                   await ref.read(authRepositoryProvider).signOut();

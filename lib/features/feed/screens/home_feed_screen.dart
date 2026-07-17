@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/models/post_model.dart';
+import '../../saved/providers/saved_posts_provider.dart';
 import '../providers/posts_provider.dart';
 
 class HomeFeedScreen extends ConsumerWidget {
@@ -16,6 +17,11 @@ class HomeFeedScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Local Pulse'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_outline),
+            tooltip: 'Saved posts',
+            onPressed: () => context.push('/saved'),
+          ),
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => context.go('/profile'),
@@ -54,13 +60,28 @@ class HomeFeedScreen extends ConsumerWidget {
   }
 }
 
-class _PostCard extends StatelessWidget {
+class _PostCard extends ConsumerWidget {
   const _PostCard({required this.post});
 
   final PostModel post;
 
+  Future<void> _toggleSave(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(savedPostIdsProvider.notifier).toggle(post.id);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update saved posts: $error')),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final savedIdsAsync = ref.watch(savedPostIdsProvider);
+    final isSaved = savedIdsAsync.valueOrNull?.contains(post.id) ?? false;
+    final savedIdsLoaded = savedIdsAsync.hasValue;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -68,9 +89,27 @@ class _PostCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              post.title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    post.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    isSaved ? Icons.bookmark : Icons.bookmark_outline,
+                  ),
+                  tooltip: isSaved ? 'Unsave' : 'Save',
+                  onPressed:
+                      savedIdsLoaded ? () => _toggleSave(context, ref) : null,
+                ),
+              ],
             ),
             if (post.description != null && post.description!.isNotEmpty) ...[
               const SizedBox(height: 6),

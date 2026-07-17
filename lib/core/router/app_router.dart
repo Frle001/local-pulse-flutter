@@ -9,6 +9,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/feed/screens/home_feed_screen.dart';
 import '../../features/post/screens/create_post_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/saved/screens/saved_posts_screen.dart';
 
 final routerRefreshProvider = Provider<GoRouterRefreshStream>((ref) {
   final notifier = GoRouterRefreshStream();
@@ -69,6 +70,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/create-post',
         builder: (context, state) => const CreatePostScreen(),
+      ),
+      GoRoute(
+        path: '/saved',
+        builder: (context, state) => const SavedPostsScreen(),
       ),
     ],
   );
