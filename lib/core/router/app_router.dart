@@ -7,6 +7,7 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/feed/screens/home_feed_screen.dart';
+import '../../features/post/screens/create_post_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 
 final routerRefreshProvider = Provider<GoRouterRefreshStream>((ref) {
@@ -64,6 +65,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/create-post',
+        builder: (context, state) => const CreatePostScreen(),
       ),
     ],
   );
